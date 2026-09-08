@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>IronBow</title>
+<meta name="theme-color" content="#0b0c0e"/>
+<meta name="description" content="Suchstation für DJI Mavic 2 Enterprise Advanced — Rasterflug, Wärmebild, PIC-Übernahme."/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0b0c0e;--surface:#131416;--surface-2:#1a1b1e;--fg:#ecece8;--muted:#8b8d93;
+  --faint:#5c5e64;--border:#2a2b30;--accent:#d8dbe2;--accent-fg:#0b0c0e;
+  --danger:#dc4444;--ok:#7fa88a;--warn:#c4a15a;
+  --sans:"Barlow",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:var(--sans)}
+button{font-family:inherit;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+#app{height:100dvh}
+.mono{font-family:var(--mono)}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+.brief{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:2rem 1rem}
+.card{width:100%;max-width:36rem;border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:2rem}
+h1{margin:.75rem 0 0;font-weight:500;font-size:clamp(2.2rem,6vw,3.2rem);letter-spacing:-.03em}
+.lead{color:var(--muted);line-height:1.55;margin:.75rem 0 0;font-size:.95rem}
+.stats{margin:1.5rem 0 0;display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+@media(min-width:640px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--surface-2);padding:.75rem}
+.stat dt{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.stat dd{margin:.25rem 0 0;font-family:var(--mono);font-size:.9rem}
+.notes{margin:1.5rem 0 0;padding:0;list-style:none;color:var(--muted);font-size:.9rem;line-height:1.5}
+.notes li{border-left:2px solid var(--border);padding:.15rem 0 .15rem .75rem;margin:.4rem 0}
+.notes li.hi{border-color:var(--accent)}
+.ack{margin-top:1.5rem;width:100%;display:flex;gap:.75rem;align-items:flex-start;text-align:left;border:1px solid var(--border);background:var(--surface-2);border-radius:8px;padding:.75rem;color:var(--fg);font-size:.9rem}
+.box{width:16px;height:16px;margin-top:2px;flex:none;border:1px solid var(--muted);border-radius:3px;display:grid;place-items:center}
+.ack.on .box{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:8px;padding:.9rem 1.1rem;font-weight:500;font-size:1rem;min-height:48px;width:100%}
+.btn-primary{margin-top:1.1rem;background:var(--accent);color:var(--accent-fg)}
+.btn-outline{margin-top:.5rem;background:transparent;color:var(--fg);border:1px solid var(--border);text-decoration:none}
+.btn-danger{background:var(--danger);color:#fff8f6}
+.btn-ghost{background:var(--surface-2);color:var(--fg);border:1px solid var(--border)}
+.station{display:flex;flex-direction:column;height:100dvh}
+.top{display:flex;flex-wrap:wrap;gap:.75rem 1rem;align-items:center;border-bottom:1px solid var(--border);background:var(--surface);padding:.5rem .75rem}
+.hud{display:flex;flex-wrap:wrap;gap:.35rem 1rem;flex:1;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.hud b{font-weight:500}
+.faint{color:var(--faint)}
+.warn{color:var(--danger)}
+.badge{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--border);padding:.15rem .4rem;border-radius:4px}
+.badge.sim{color:var(--warn);border-color:#5a4a28}
+.badge.auto{color:var(--ok);border-color:#3d5a45}
+.badge.pic{color:#fff;background:var(--danger);border-color:var(--danger)}
+.tabs{display:flex;gap:4px;padding:4px 8px;border-bottom:1px solid var(--border)}
+.tabs button{flex:1;min-height:40px;border:0;border-radius:4px;background:transparent;color:var(--muted);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.tabs button.on{background:var(--surface-2);color:var(--fg)}
+.grid{flex:1;min-height:0;display:grid;grid-template-columns:1fr;gap:8px;padding:8px;position:relative}
+.pane{min-height:0;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#0b0c0e}
+.pane h2{margin:0;padding:6px 10px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);background:var(--surface)}
+.feeds{display:grid;grid-template-rows:1fr 1fr;min-height:0;flex:1}
+canvas{display:block;width:100%;height:100%}
+.side{overflow:auto;background:var(--surface);padding:10px;font-size:13px}
+.side h3{margin:0 0 .5rem;font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.log{font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.45;white-space:pre-wrap}
+.det{display:flex;justify-content:space-between;gap:8px;padding:.4rem 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px solid var(--border);background:var(--surface);padding:8px}
+.bar .btn{width:auto;padding:.7rem 1.1rem}
+.help{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
+.hidden{display:none !important}
+@media(min-width:960px){
+  .tabs{display:none}
+  .grid{grid-template-columns:minmax(260px,34%) minmax(0,1fr) minmax(240px,28%)}
+  .pane.video,.pane.map,.pane.data{display:flex !important}
+}
+.stick-wrap{display:none}
+@media(max-width:959px){
+  .stick-wrap{display:flex;pointer-events:none;position:absolute;inset:auto 8px 56px;justify-content:space-between;z-index:5}
+  .stick{pointer-events:auto;width:112px;height:112px;border-radius:50%;border:1px solid var(--border);background:#131416cc;position:relative;touch-action:none}
+  .knob{width:36px;height:36px;border-radius:50%;background:var(--accent);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const APK="https://github.com/Patric1982/IronBow/actions";
+const M2EA={maxFlightMin:31,climb:4,descent:4,visualFov:84,th:{w:640,h:512,f:9,pitch:12}};
+const HOME={lat:49.9669,lon:7.8994,label:"Bingen am Rhein"};
+const MISSION={altitudeM:60,radiusM:300,overlap:.2,cruiseMps:8,rotateDeg:0,cornerRadiusM:18};
+const STOPS=[[0,0,0,0],[.1,18,0,72],[.26,92,0,148],[.44,196,18,36],[.6,255,88,4],[.78,255,196,28],[1,255,252,228]];
+const PHASE={briefing:"Briefing",ready:"Bereit",takeoff:"Start",climb:"Steigflug",transit:"Transit",search:"Suchmuster",hold:"Hover",manual:"Manuell",rtl:"RTH",landing:"Landung",landed:"Am Boden"};
+const DEAD=.12,YAW=70,MAN_H=11,MAN_V=3.6,GRID=36,VIEW=720;
+function clamp(n,a,b){return Math.min(b,Math.max(a,n))}
+function wrap(d){let x=d%360;if(x<0)x+=360;return x}
+function lerp(a,b,t){return a+(b-a)*t}
+function hdgDelta(a,b){return ((b-a+540)%360)-180}
+function fmt(n,d=0){return n.toFixed(d)}
+function pad(n){return String(Math.floor(n)).padStart(2,"0")}
+function clock(ms){const s=Math.max(0,Math.floor(ms/1000));return pad(s/60)+":"+pad(s%60)}
+function ironbow(t){const u=clamp(t,0,1);let i=0;while(i<STOPS.length-2&&u>STOPS[i+1][0])i++;const A=STOPS[i],B=STOPS[i+1],f=(u-A[0])/(B[0]-A[0]||1);return[lerp(A[1],B[1],f),lerp(A[2],B[2],f),lerp(A[3],B[3],f)]}
+function tempT(c,lo=6,hi=42){return (c-lo)/(hi-lo)}
+function thermalGeo(alt){const sw=(M2EA.th.w*M2EA.th.pitch)/1e6,sh=(M2EA.th.h*M2EA.th.pitch)/1e6,f=M2EA.th.f/1e3;const hf=2*Math.atan(sw/(2*f)),vf=2*Math.atan(sh/(2*f));return{hf,vf,widthM:2*alt*Math.tan(hf/2),heightM:2*alt*Math.tan(vf/2),hfovDeg:hf*180/Math.PI,vfovDeg:vf*180/Math.PI}}
+function inFoot(px,py,x,y,hdg,w,h){const rad=hdg*Math.PI/180;const e=px-x,n=py-y;const fwd=e*Math.sin(rad)+n*Math.cos(rad);const right=e*Math.cos(rad)-n*Math.sin(rad);return Math.abs(right)<=w/2&&Math.abs(fwd)<=h/2}
+function lawnmower(R,sp){const pts=[];let i=0;for(let y=R-sp/2;y>=-R+sp/2-1e-6;y-=sp){const half=Math.sqrt(Math.max(0,R*R-y*y));if(half<12){i++;continue}if(i%2===0)pts.push({x:-half,y},{x:half,y});else pts.push({x:half,y},{x:-half,y});i++}return pts}
+function pathLen(pts){let d=0;for(let i=1;i<pts.length;i++)d+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);return d}
+function cornerR(pts,i,maxR){if(i<=0||i>=pts.length-1)return 0;const dIn=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);const dOut=Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y);return Math.min(maxR,Math.min(dIn,dOut)*0.4)}
+function buildWps(m){const geo=thermalGeo(m.altitudeM);const sp=geo.widthM*(1-m.overlap);const track=lawnmower(m.radiusM,sp);const wps=[{x:0,y:0,z:m.altitudeM,kind:"climb"}];track.forEach((p,i)=>wps.push({x:p.x,y:p.y,z:m.altitudeM,kind:"track",cornerRadiusM:cornerR(track,i,m.cornerRadiusM)}));wps.push({x:0,y:0,z:m.altitudeM,kind:"rtl"},{x:0,y:0,z:0,kind:"land"});return {wps,sp,len:pathLen(track)}}
+function seed(R){const src=[];const rnd=(a,b)=>a+Math.random()*(b-a);const kinds=["animal","animal","animal","human","nonbio"];for(let i=0;i<11;i++){const ang=rnd(0,Math.PI*2),r=rnd(40,R*0.82);src.push({id:"S"+(i+1),x:Math.cos(ang)*r,y:Math.sin(ang)*r,radiusM:rnd(0.4,1.6),tempC:kinds[i%kinds.length]==="nonbio"?rnd(12,22):rnd(32.5,39.5),kind:kinds[i%kinds.length]})}return src}
+function enuToLla(x,y,lat0,lon0){const mLat=111320;const mLon=111320*Math.cos(lat0*Math.PI/180);return{lat:lat0+y/mLat,lon:lon0+x/mLon}}
+
+const built=buildWps(MISSION);
+const geo0=thermalGeo(MISSION.altitudeM);
+let S={
+  t:0,phase:"briefing",x:0,y:0,z:0,heading:0,vx:0,vy:0,vz:0,speed:0,
+  battery:97.4,gps:18,rc:96,wpIndex:0,motors:false,pic:false,
+  detections:[],sources:seed(MISSION.radiusM),coverage:0,logs:[],
+  resumeWp:0,flightMs:0,autoRtl:false,ack:false,tab:"video"
+};
+const covered=new Set();const dwell=new Map();const keys=new Set();
+const sticks={pitch:0,roll:0,yaw:0,throttle:0};
+const touch={pitch:0,roll:0,yaw:0,throttle:0};
+let gotoT=null,last=0,raf=0;
+
+function log(msg){const st=new Date().toISOString().slice(11,19);S.logs=[st+"  "+msg,...S.logs].slice(0,14)}
+function stickMag(){return Math.max(Math.abs(sticks.pitch),Math.abs(sticks.roll),Math.abs(sticks.yaw),Math.abs(sticks.throttle))}
+function readKeys(){
+  let p=0,r=0,y=0,t=0;
+  if(keys.has("KeyW")||keys.has("ArrowUp"))p+=1;
+  if(keys.has("KeyS")||keys.has("ArrowDown"))p-=1;
+  if(keys.has("KeyQ"))r-=1; if(keys.has("KeyE"))r+=1;
+  if(keys.has("KeyA")||keys.has("ArrowLeft"))y-=1;
+  if(keys.has("KeyD")||keys.has("ArrowRight"))y+=1;
+  if(keys.has("KeyR"))t+=1; if(keys.has("KeyF"))t-=1;
+  sticks.pitch=clamp(p+touch.pitch,-1,1);sticks.roll=clamp(r+touch.roll,-1,1);
+  sticks.yaw=clamp(y+touch.yaw,-1,1);sticks.throttle=clamp(t+touch.throttle,-1,1);
+}
+function markCov(){
+  const g=thermalGeo(Math.max(8,S.z));const span=MISSION.radiusM*2;const cell=span/GRID;
+  for(let iy=0;iy<GRID;iy++)for(let ix=0;ix<GRID;ix++){
+    const cx=-MISSION.radiusM+(ix+.5)*cell,cy=-MISSION.radiusM+(iy+.5)*cell;
+    if(cx*cx+cy*cy>MISSION.radiusM*MISSION.radiusM)continue;
+    if(inFoot(cx,cy,S.x,S.y,S.heading,g.widthM,g.heightM))covered.add(ix*1000+iy);
+  }
+  let inside=0;
+  for(let iy=0;iy<GRID;iy++)for(let ix=0;ix<GRID;ix++){
+    const cx=-MISSION.radiusM+(ix+.5)*cell,cy=-MISSION.radiusM+(iy+.5)*cell;
+    if(cx*cx+cy*cy<=MISSION.radiusM*MISSION.radiusM)inside++;
+  }
+  S.coverage=inside?covered.size/inside:0;
+}
+function detect(dt){
+  if(S.z<8)return;
+  const g=thermalGeo(S.z);
+  for(const src of S.sources){
+    if(src.kind==="nonbio")continue;
+    const hit=inFoot(src.x,src.y,S.x,S.y,S.heading,g.widthM,g.heightM);
+    const prev=dwell.get(src.id)||0;const next=hit?prev+dt:Math.max(0,prev-dt*.4);
+    dwell.set(src.id,next);
+    if(hit&&next>.55&&!S.detections.some(d=>d.id===src.id)){
+      const ll=enuToLla(src.x,src.y,HOME.lat,HOME.lon);
+      S.detections=[...S.detections,{id:src.id,x:src.x,y:src.y,lat:ll.lat,lon:ll.lon,tempC:src.tempC,kind:src.kind,t:S.t}];
+      log("Signatur "+src.id+"  "+(src.kind==="human"?"Mensch":"Tier")+"  "+src.tempC.toFixed(1)+"°C");
+    }
+  }
+}
+function apply(dt,ax,ay,az,yawRate){
+  S.heading=wrap(S.heading+yawRate*dt);
+  S.vx+=ax*dt;S.vy+=ay*dt;S.vz+=az*dt;
+  const hSpd=Math.hypot(S.vx,S.vy);
+  const maxH=(S.phase==="manual"||S.phase==="hold")?MAN_H:MISSION.cruiseMps;
+  if(hSpd>maxH){const k=maxH/hSpd;S.vx*=k;S.vy*=k}
+  S.vz=clamp(S.vz,-M2EA.descent,M2EA.climb);
+  S.x+=S.vx*dt;S.y+=S.vy*dt;S.z=Math.max(0,S.z+S.vz*dt);
+  const drag=Math.exp(-dt*1.8);S.vx*=drag;S.vy*=drag;S.vz*=drag;S.speed=Math.hypot(S.vx,S.vy);
+}
+function flyTo(tx,ty,tz,cruise,dt,yawOk=28,hold=false){
+  const dist=Math.hypot(tx-S.x,ty-S.y);
+  const des=Math.atan2(tx-S.x,ty-S.y)*180/Math.PI;const err=dist<1?0:hdgDelta(S.heading,des);
+  const yawRate=clamp(err*2.6,-YAW,YAW);const aligned=Math.abs(err)<yawOk;
+  let speedCmd=hold?(dist<1.5?cruise*.85:cruise):(dist<1.2?0:dist<12?clamp(dist*.55,.4,cruise):cruise);
+  const bank=aligned?1:clamp(1-Math.abs(err)/150,hold?.55:.35,1);
+  const h=S.heading*Math.PI/180;
+  apply(dt,(Math.sin(h)*speedCmd*bank-S.vx)*2.4,(Math.cos(h)*speedCmd*bank-S.vy)*2.4,clamp((tz-S.z)*1.4,-3.2,3.6)-S.vz*0+clamp((tz-S.z)*1.4,-3.2,3.6)*0+(clamp((tz-S.z)*1.4,-3.2,3.6)-S.vz)*2.2,yawRate);
+  return dist;
+}
+function manual(dt){
+  const h=S.heading*Math.PI/180;const fwd=sticks.pitch,right=sticks.roll;
+  apply(dt,((Math.sin(h)*fwd+Math.cos(h)*right)*MAN_H-S.vx)*3.2,((Math.cos(h)*fwd-Math.sin(h)*right)*MAN_H-S.vy)*3.2,(sticks.throttle*MAN_V-S.vz)*3.0,sticks.yaw*YAW);
+}
+function autoPhase(dt){
+  const wps=built.wps;const wp=wps[S.wpIndex];
+  if(!wp){S.phase="landed";S.motors=false;return}
+  if(S.phase==="takeoff"){S.motors=true;flyTo(0,0,8,.4,dt,180);if(S.z>=7.4){S.phase="climb";log("Steigflug auf Suchhöhe")}return}
+  if(S.phase==="climb"){flyTo(0,0,MISSION.altitudeM,.2,dt,180);if(S.z>=MISSION.altitudeM-.6){S.phase="transit";S.wpIndex=Math.max(1,S.wpIndex);log("Transit zum ersten Rasterpunkt")}return}
+  if(S.phase==="rtl"){const d=flyTo(0,0,MISSION.altitudeM,MISSION.cruiseMps,dt);if(d<4&&S.z>MISSION.altitudeM-2){S.phase="landing";log("Landeanflug")}return}
+  if(S.phase==="landing"){flyTo(0,0,0,1.2,dt,180);if(S.z<=.15){S.z=0;S.vx=S.vy=S.vz=0;S.phase="landed";S.motors=false;log("Landung Homepoint")}return}
+  if(S.phase==="transit"||S.phase==="search"){
+    if(wp.kind==="rtl"){S.phase="rtl";log("Raster vollständig — RTH");return}
+    if(wp.kind==="land"){S.phase="landing";return}
+    const next=wps[S.wpIndex+1];const r=wp.cornerRadiusM||0;
+    const through=wp.kind==="track"&&r>.2&&next&&next.kind!=="land";
+    let tx=wp.x,ty=wp.y;
+    if(through&&next){const dNow=Math.hypot(wp.x-S.x,wp.y-S.y);if(dNow<r*1.4){const t=clamp(1-dNow/(r*1.4),0,1);const dOut=Math.hypot(next.x-wp.x,next.y-wp.y)||1;tx=wp.x+((next.x-wp.x)/dOut)*r*t;ty=wp.y+((next.y-wp.y)/dOut)*r*t}}
+    const dWp=Math.hypot(wp.x-S.x,wp.y-S.y);
+    flyTo(tx,ty,wp.z,MISSION.cruiseMps,dt,through?64:28,through);
+    if(dWp<(through?Math.max(6,r*.72):5.5)){S.wpIndex=Math.min(S.wpIndex+1,wps.length-1);if(S.phase==="transit"){S.phase="search";log("Suchmuster  "+MISSION.cruiseMps+" m/s  Ecken "+MISSION.cornerRadiusM+" m")}}
+  }
+}
+function drain(dt){
+  if(!S.motors||S.phase==="landed")return;
+  const load=.85+S.speed/20+Math.abs(S.vz)*.08;
+  S.battery=Math.max(0,S.battery-dt*(100/(M2EA.maxFlightMin*60))*load);
+  if(S.battery<22&&S.phase==="search"){S.phase="rtl";S.autoRtl=true;log("Reserve — automatisches RTH")}
+  if(S.battery<8&&S.phase!=="landing"){S.phase="landing";log("Kritischer Akku — Landung")}
+}
+function step(dt){
+  if(S.phase==="briefing"||S.phase==="ready"||S.phase==="landed"){
+    if(S.phase==="ready"&&stickMag()>DEAD){begin("Manueller Start");S.phase="manual"}
+    S.speed=Math.hypot(S.vx,S.vy);return;
+  }
+  S.t+=dt;S.flightMs+=dt*1000;S.gps=16+Math.round(Math.sin(S.t*.3)*2);S.rc=clamp(94+Math.sin(S.t*.7)*4-Math.hypot(S.x,S.y)/180,42,99);
+  const auto=["takeoff","climb","transit","search","rtl","landing"].includes(S.phase);
+  if(auto&&stickMag()>DEAD){S.resumeWp=S.wpIndex;S.phase="manual";gotoT=null;log("PIC-Übernahme — Autopilot pausiert")}
+  if(S.phase==="manual"||S.phase==="hold"){
+    if(gotoT&&S.phase==="manual"){if(stickMag()>DEAD){gotoT=null;manual(dt)}else{const dist=flyTo(gotoT.x,gotoT.y,MISSION.altitudeM,MISSION.cruiseMps,dt);if(dist<6){log("Über "+gotoT.id+" — Hover");gotoT=null;S.phase="hold"}}}
+    else if(S.phase==="hold"&&stickMag()>DEAD){S.phase="manual";manual(dt)}
+    else if(S.phase==="hold")flyTo(S.x,S.y,S.z,0,dt,180);
+    else manual(dt);
+  } else autoPhase(dt);
+  if(["search","transit","climb","manual","hold"].includes(S.phase)){markCov();detect(dt)}
+  drain(dt);if(S.z<0)S.z=0;
+}
+function begin(reason){S.motors=true;S.phase="takeoff";S.wpIndex=0;log(reason)}
+function startSearch(){if(S.phase==="briefing")return;if(S.phase==="ready"||S.phase==="landed"){covered.clear();dwell.clear();S.detections=[];S.wpIndex=0;begin("Suchmuster starten")}else if(S.phase==="manual"||S.phase==="hold"){S.phase="search";S.wpIndex=S.resumeWp||S.wpIndex;log("Autopilot fortgesetzt")}}
+function hold(){if(S.phase==="briefing"||S.phase==="ready"||S.phase==="landed")return;S.phase="hold";gotoT=null;log("Hover")}
+function rth(){if(S.phase==="briefing"||S.phase==="ready")return;S.phase="rtl";gotoT=null;log("RTH")}
+function override(){if(["takeoff","climb","transit","search","rtl","landing"].includes(S.phase)){S.resumeWp=S.wpIndex;S.phase="manual";log("PIC-Übernahme — Autopilot pausiert")}}
+function accept(){S.pic=true;S.phase="ready";log("Fernpilot bestätigt · "+HOME.label);render()}
+
+function drawMap(c){
+  const ctx=c.getContext("2d");if(!ctx)return;
+  const size=c.width=c.height=Math.max(1,Math.floor(Math.min(c.clientWidth||320,c.clientHeight||320)*devicePixelRatio));
+  const ppm=size/VIEW;const to=(x,y)=>({px:size/2+x*ppm,py:size/2-y*ppm});
+  ctx.fillStyle="#0b0c0e";ctx.fillRect(0,0,size,size);
+  ctx.strokeStyle="#1f2228";ctx.lineWidth=1;
+  for(let i=-3;i<=3;i++){const p=to(i*100,0);const q=to(0,i*100);ctx.beginPath();ctx.moveTo(p.px,0);ctx.lineTo(p.px,size);ctx.stroke();ctx.beginPath();ctx.moveTo(0,q.py);ctx.lineTo(size,q.py);ctx.stroke()}
+  ctx.beginPath();const home=to(0,0);ctx.arc(home.px,home.py,MISSION.radiusM*ppm,0,Math.PI*2);ctx.strokeStyle="#2a2b30";ctx.stroke();
+  ctx.beginPath();const wps=built.wps.filter(w=>w.kind==="track");
+  wps.forEach((w,i)=>{const p=to(w.x,w.y);i?ctx.lineTo(p.px,p.py):ctx.moveTo(p.px,p.py)});
+  ctx.strokeStyle="#4a5560";ctx.lineWidth=1.5;ctx.stroke();
+  for(const d of S.detections){const p=to(d.x,d.y);ctx.fillStyle=d.kind==="human"?"#dc4444":"#c4a15a";ctx.beginPath();ctx.arc(p.px,p.py,5,0,Math.PI*2);ctx.fill()}
+  const ac=to(S.x,S.y);ctx.save();ctx.translate(ac.px,ac.py);ctx.rotate(S.heading*Math.PI/180);
+  ctx.fillStyle="#ecece8";ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(7,10);ctx.lineTo(0,6);ctx.lineTo(-7,10);ctx.closePath();ctx.fill();ctx.restore();
+  ctx.fillStyle="#8b8d93";ctx.font=(11*devicePixelRatio)+"px IBM Plex Mono";ctx.fillText(HOME.label,home.px+8,home.py-8);
+}
+function noise(ctx,w,h,t,thermal){
+  if(thermal){
+    const g=ctx.createLinearGradient(0,h,w,0);
+    g.addColorStop(0,"#120018");g.addColorStop(.35,"#5c0094");g.addColorStop(.6,"#c41424");g.addColorStop(.85,"#ffb41e");g.addColorStop(1,"#fff6d8");
+    ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+    ctx.fillStyle="rgba(0,0,0,"+(0.18+0.08*Math.sin(t))+")";ctx.fillRect(0,0,w,h);
+  } else {
+    ctx.fillStyle="#1a2218";ctx.fillRect(0,0,w,h);
+    ctx.fillStyle="#24301f";
+    for(let i=0;i<18;i++){ctx.fillRect((Math.sin(t*.4+i)*0.5+0.5)*w,(Math.cos(t*.3+i*1.7)*0.5+0.5)*h,40,8)}
+  }
+}
+function drawFeeds(){
+  const rgb=document.getElementById("rgb");const ir=document.getElementById("ir");
+  if(!rgb||!ir)return;
+  for(const c of [rgb,ir]){const r=c.getBoundingClientRect();c.width=Math.max(160,r.width|0);c.height=Math.max(120,r.height|0)}
+  const g=thermalGeo(Math.max(8,S.z));
+  const irx=ir.getContext("2d"),rg=rgb.getContext("2d");
+  noise(rg,rgb.width,rgb.height,S.t,false);noise(irx,ir.width,ir.height,S.t,true);
+  const h=S.heading*Math.PI/180;
+  for(const src of S.sources){
+    const e=src.x-S.x,n=src.y-S.y;const fwd=e*Math.sin(h)+n*Math.cos(h);const right=e*Math.cos(h)-n*Math.sin(h);
+    if(Math.abs(right)>g.widthM/2||Math.abs(fwd)>g.heightM/2)continue;
+    const sx=ir.width/2+(right/g.widthM)*ir.width;const sy=ir.height/2-(fwd/g.heightM)*ir.height;
+    const rad=Math.max(6,(src.radiusM/g.widthM)*ir.width*10);
+    const [r,g2,b]=ironbow(tempT(src.tempC));
+    const grd=irx.createRadialGradient(sx,sy,0,sx,sy,rad);
+    grd.addColorStop(0,"rgba("+r+","+g2+","+b+",.95)");grd.addColorStop(.45,"rgba("+r+","+g2+","+b+",.5)");grd.addColorStop(1,"rgba(0,0,0,0)");
+    irx.fillStyle=grd;irx.beginPath();irx.arc(sx,sy,rad,0,Math.PI*2);irx.fill();
+    if(src.kind!=="nonbio"){rg.strokeStyle="rgba(220,68,68,.8)";rg.strokeRect(sx-12,sy-12,24,24)}
+  }
+  irx.strokeStyle="rgba(236,236,232,.35)";irx.strokeRect(ir.width/2-18,ir.height/2-18,36,36);
+}
+function hud(){
+  const auto=["search","transit","climb","takeoff","rtl"].includes(S.phase);
+  return `<header class="top">
+    <div class="kicker">IronBow</div>
+    <span class="badge sim">SIM</span>
+    ${auto?'<span class="badge auto">AUTO</span>':''}
+    ${S.phase==="manual"?'<span class="badge pic">PIC</span>':''}
+    <div class="hud">
+      <span><span class="faint">AGL</span> <b>${fmt(S.z,0)} m</b></span>
+      <span><span class="faint">GS</span> <b>${fmt(S.speed,1)} m/s</b></span>
+      <span><span class="faint">HDG</span> <b>${fmt(S.heading,0)}°</b></span>
+      <span><span class="faint">BAT</span> <b class="${S.battery<30?"warn":""}">${fmt(S.battery,0)}%</b></span>
+      <span><span class="faint">SAT</span> <b>${S.gps}</b></span>
+      <span><span class="faint">RC</span> <b>${fmt(S.rc,0)}%</b></span>
+      <span><span class="faint">T+</span> <b>${clock(S.flightMs)}</b></span>
+    </div>
+    <div class="kicker">${PHASE[S.phase]}</div>
+  </header>`;
+}
+function briefing(){
+  const sp=built.sp,flightS=built.len/MISSION.cruiseMps;
+  return `<div class="brief"><div class="card">
+    <p class="kicker">Mavic 2 EA · Smart Controller</p>
+    <h1>IronBow</h1>
+    <p class="lead">Suchstation mit Autopilot. Rasterflug in ${MISSION.altitudeM}&nbsp;m bei ${MISSION.cruiseMps}&nbsp;m/s, Ecken ${MISSION.cornerRadiusM}&nbsp;m Radius, ${Math.round(MISSION.overlap*100)}&nbsp;% Überlappung, ${MISSION.radiusM}&nbsp;m um den Homepoint. Biologische Wärmesignaturen werden auf der Karte markiert. Du kannst jederzeit übernehmen.</p>
+    <dl class="stats">
+      <div class="stat"><dt>Thermal-FOV</dt><dd>${geo0.hfovDeg.toFixed(0)}×${geo0.vfovDeg.toFixed(0)}°</dd></div>
+      <div class="stat"><dt>Swath 60 m</dt><dd>${geo0.widthM.toFixed(0)} m</dd></div>
+      <div class="stat"><dt>Bahnabstand</dt><dd>${sp.toFixed(0)} m</dd></div>
+      <div class="stat"><dt>Rasterzeit</dt><dd>${Math.round(flightS/60)} min</dd></div>
+    </dl>
+    <ul class="notes">
+      <li class="hi">Live auf der echten M2EA: APK unten laden, auf den Smart Controller sideloaden. Raster, IRONBOW, Isotherm 32–40 °C und Stick-Übernahme laufen lokal. Hier bleibt der Simulator.</li>
+      <li>Homepoint: ${HOME.label}. Autopilot-Start legt das Suchmuster und markiert Signaturen 32–40 °C. Stick-Ausschlag oder Übernehmen stoppt den Rasterflug sofort.</li>
+      <li>Du bleibst Fernpilot. Sichtverbindung und Betriebskategorie nach EU 2019/947 gelten in der Realität weiter.</li>
+    </ul>
+    <button class="ack ${S.ack?"on":""}" id="ack"><span class="box">${S.ack?"✓":""}</span><span>Ich übernehme die Verantwortung als Fernpilot und verstehe, dass dies ein Simulator ist.</span></button>
+    <button class="btn btn-primary" id="open" ${S.ack?"":"disabled"}>Station öffnen</button>
+    <a class="btn btn-outline" href="${APK}" target="_blank" rel="noreferrer">APK · GitHub Actions</a>
+  </div></div>`;
+}
+function station(){
+  const auto=["search","transit","climb","takeoff","rtl","landing"].includes(S.phase);
+  const flying=!["briefing","ready","landed"].includes(S.phase);
+  const show=["video","karte","daten"];
+  return `<div class="station">${hud()}
+  <div class="tabs">${show.map(([id,l],i)=>i).map((_,i)=>{const id=["video","karte","daten"][i],l=["Bild","Karte","Daten"][i];return `<button data-tab="${id}" class="${S.tab===id?"on":""}">${l}</button>`}).join("")}</div>
+  <div class="grid">
+    <section class="pane video ${S.tab==="video"?"":"hidden"}">
+      <h2>Live · RGB + IRONBOW</h2>
+      <div class="feeds"><canvas id="rgb"></canvas><canvas id="ir"></canvas></div>
+    </section>
+    <section class="pane map ${S.tab==="karte"?"":"hidden"}">
+      <h2>Karte · ${HOME.label}</h2>
+      <canvas id="map"></canvas>
+    </section>
+    <aside class="pane data side ${S.tab==="daten"?"":"hidden"}">
+      <h3>Signaturen ${S.detections.length}</h3>
+      ${S.detections.length?S.detections.map(d=>`<div class="det"><span>${d.id} · ${d.kind==="human"?"Mensch":"Tier"}</span><span>${d.tempC.toFixed(1)}°C</span></div>`).join(""):`<p class="faint">Keine biologische Signatur. Isotherm 32–40 °C.</p>`}
+      <h3 style="margin-top:1rem">Abdeckung ${Math.round(S.coverage*100)}%</h3>
+      <div style="height:6px;background:#2a2b30;border-radius:99px;overflow:hidden"><div style="height:100%;width:${Math.round(S.coverage*100)}%;background:#7fa88a"></div></div>
+      <h3 style="margin-top:1rem">Log</h3>
+      <div class="log">${S.logs.join("<br>")||"—"}</div>
+    </aside>
+    <div class="stick-wrap">
+      <div class="stick" data-stick="yawth"><div class="knob"></div></div>
+      <div class="stick" data-stick="pr"><div class="knob"></div></div>
+    </div>
+  </div>
+  <div class="bar">
+    ${auto?`<button class="btn btn-danger" id="ov">Übernehmen</button>`:`<button class="btn btn-primary" id="go" style="width:auto">${S.phase==="ready"||S.phase==="landed"?"Suchmuster starten":"Autopilot fortsetzen"}</button>`}
+    <button class="btn btn-ghost" id="hov" ${flying?"":"disabled"}>Hover</button>
+    <button class="btn btn-outline" id="rth" ${flying?"":"disabled"} style="width:auto">RTH</button>
+    <p class="help">WP ${Math.min(S.wpIndex+1,built.wps.length)}/${built.wps.length} · W/S Nick · A/D Gier · Q/E Rolle · R/F Höhe · O Übernehmen · H RTH · Leertaste Hover</p>
+  </div></div>`;
+}
+function bind(){
+  const root=document.getElementById("app");
+  root.querySelector("#ack")?.addEventListener("click",()=>{S.ack=!S.ack;render()});
+  root.querySelector("#open")?.addEventListener("click",()=>{if(S.ack)accept()});
+  root.querySelector("#go")?.addEventListener("click",startSearch);
+  root.querySelector("#ov")?.addEventListener("click",override);
+  root.querySelector("#hov")?.addEventListener("click",hold);
+  root.querySelector("#rth")?.addEventListener("click",rth);
+  root.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{S.tab=b.getAttribute("data-tab");render()}));
+  root.querySelectorAll(".stick").forEach(el=>{
+    const kind=el.getAttribute("data-stick");
+    const set=(ev)=>{
+      const r=el.getBoundingClientRect();const t=ev.touches?ev.touches[0]:ev;
+      const x=clamp((t.clientX-r.left)/r.width*2-1,-1,1);const y=clamp((t.clientY-r.top)/r.height*2-1,-1,1);
+      if(kind==="pr"){touch.roll=x;touch.pitch=-y}else{touch.yaw=x;touch.throttle=-y}
+      const k=el.querySelector(".knob");k.style.transform=`translate(calc(-50% + ${x*32}px), calc(-50% + ${y*32}px))`;
+    };
+    const clr=()=>{if(kind==="pr"){touch.roll=0;touch.pitch=0}else{touch.yaw=0;touch.throttle=0};el.querySelector(".knob").style.transform="translate(-50%,-50%)"};
+    el.addEventListener("pointerdown",e=>{el.setPointerCapture(e.pointerId);set(e)});
+    el.addEventListener("pointermove",e=>{if(e.buttons)set(e)});
+    el.addEventListener("pointerup",clr);el.addEventListener("pointerleave",clr);
+  });
+  const map=document.getElementById("map");
+  if(map){
+    map.addEventListener("click",ev=>{
+      const rect=map.getBoundingClientRect();
+      const x=((ev.clientX-rect.left)/rect.width-.5)*VIEW;
+      const y=-((ev.clientY-rect.top)/rect.height-.5)*VIEW;
+      let best="",bestD=18;
+      for(const d of S.detections){const dist=Math.hypot(d.x-x,d.y-y);if(dist<bestD){bestD=dist;best=d.id}}
+      if(best){const d=S.detections.find(z=>z.id===best);gotoT={x:d.x,y:d.y,id:d.id};S.phase="manual";log("Anflug "+d.id)}
+    });
+  }
+}
+function render(){
+  const root=document.getElementById("app");
+  root.innerHTML=S.phase==="briefing"?briefing():station();
+  bind();
+  if(S.phase!=="briefing"){const m=document.getElementById("map");if(m)drawMap(m);drawFeeds()}
+}
+window.addEventListener("keydown",e=>{
+  keys.add(e.code);
+  if(e.code==="KeyO")override();
+  if(e.code==="KeyH")rth();
+  if(e.code==="Space"){e.preventDefault();hold()}
+});
+window.addEventListener("keyup",e=>keys.delete(e.code));
+function loop(ts){
+  if(!last)last=ts;const dt=clamp((ts-last)/1000,0,.05);last=ts;
+  readKeys();step(dt);
+  if(S.phase!=="briefing"){
+    const m=document.getElementById("map");if(m)drawMap(m);drawFeeds();
+    const bat=document.querySelector(".hud");
+    if(bat){
+      const phaseEl=document.querySelector(".top .kicker:last-child");
+      // live hud patch without full rerender
+    }
+    const help=document.querySelector(".help");
+    if(help)help.innerHTML=`WP ${Math.min(S.wpIndex+1,built.wps.length)}/${built.wps.length} · W/S Nick · A/D Gier · Q/E Rolle · R/F Höhe · O Übernehmen · H RTH · Leertaste Hover`;
+    const top=document.querySelector(".top");
+    if(top){
+      const auto=["search","transit","climb","takeoff","rtl"].includes(S.phase);
+      top.innerHTML=`<div class="kicker">IronBow</div><span class="badge sim">SIM</span>${auto?'<span class="badge auto">AUTO</span>':''}${S.phase==="manual"?'<span class="badge pic">PIC</span>':''}<div class="hud"><span><span class="faint">AGL</span> <b>${fmt(S.z,0)} m</b></span><span><span class="faint">GS</span> <b>${fmt(S.speed,1)} m/s</b></span><span><span class="faint">HDG</span> <b>${fmt(S.heading,0)}°</b></span><span><span class="faint">BAT</span> <b class="${S.battery<30?"warn":""}">${fmt(S.battery,0)}%</b></span><span><span class="faint">SAT</span> <b>${S.gps}</b></span><span><span class="faint">RC</span> <b>${fmt(S.rc,0)}%</b></span><span><span class="faint">T+</span> <b>${clock(S.flightMs)}</b></span></div><div class="kicker">${PHASE[S.phase]}</div>`;
+    }
+  }
+  raf=requestAnimationFrame(loop);
+}
+render();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
