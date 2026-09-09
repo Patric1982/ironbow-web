@@ -1,7 +1,5 @@
-# IronBow
+# IronBow 4.22.0
 
-Ground Station für DJI Mavic 2 Enterprise Advanced — Rehkitzsuche, Thermal IRONBOW, PIC-Übernahme.
+Live-Simulation: https://ironbow.vercel.app
 
-**Live:** https://ironbow.vercel.app
-
-APK (Smart Controller, Android 7.1.2): GitHub Actions im Repo [Patric1982/IronBow](https://github.com/Patric1982/IronBow).
+APK (Smart Controller): https://github.com/Patric1982/IronBow/actions
